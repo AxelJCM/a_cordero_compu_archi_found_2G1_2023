@@ -1,6 +1,6 @@
 module MotorControl (
-  output [9:0] pwm_signal,     // Señal PWM de 10 bits
-  output [6:0] seven_segment,  // Display de siete segmentos
+  output [9:0] pwm_signal,     // Señal PWM de 10 bit s
+  output [6:0] seven_segment,  // Display de siete seg8mentos
   input logic clock,            // Señal de reloj
   input logic reset,            // Señal de reinicio opcional
   input logic [3:0] speed       // Valor normalizado de velocidad (0-10)

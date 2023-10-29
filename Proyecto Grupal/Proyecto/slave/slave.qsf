@@ -74,3 +74,4 @@ set_global_assignment -name SYSTEMVERILOG_FILE Decodificador_tb.sv
 set_global_assignment -name SYSTEMVERILOG_FILE Decodificador.sv
 set_global_assignment -name SYSTEMVERILOG_FILE slave.sv
 set_global_assignment -name SYSTEMVERILOG_FILE slave_tb.sv
+set_global_assignment -name SYSTEMVERILOG_FILE MotorControl.sv
