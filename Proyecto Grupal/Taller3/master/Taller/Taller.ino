@@ -6,6 +6,7 @@ const int CHIP = 10; // Pin de selección del esclavo en la FPGA
 #define START_COMMUNICATION 0x01
 #define END_COMMUNICATION   0x00
 
+int currentValue = 0;
 
 unsigned long startTime = 0;
 
@@ -25,13 +26,14 @@ void loop() {
   // Iniciar la comunicación
   digitalWrite(CHIP, LOW);  
   
+  byte dataToSend = 0b0000;
+  currentValue++;
+  if (currentValue > 10) {
+    currentValue = 0; // Reinicia el valor si llega a 10
+  }
+  dataToSend |= (currentValue & 0x0F);
 
-  byte dataToSend = 0b10000; 
-  byte randomBits = random(16);
-  dataToSend |= (randomBits & 0x0F);
-  dataToSend <<= 1;
-  Serial.println(dataToSend, BIN);
-  
+
   byte dataReceived;
   byte ultimos4Bits;
   bool igual = false;
@@ -39,20 +41,23 @@ void loop() {
   startTime = millis(); // Registra el tiempo de inicio
   
   while (!igual && (millis() - startTime < 3000)) { // Continuar mientras no se alcance el tiempo límite
-    dataReceived = SPI.transfer(dataToSend);  // Envía los datos y recibe la respuesta
-    ultimos4Bits = dataReceived & 0x0F;  // Aplica una máscara para obtener los últimos 4 bits
-    Serial.println(ultimos4Bits, BIN);
+    dataReceived = SPI.transfer(currentValue);  // Envía los datos y recibe la respuesta
+    ultimos4Bits = dataReceived;
+
   
-    if (randomBits == ultimos4Bits) {
+    if ((dataToSend >> 1) == (ultimos4Bits % 8)) {
       igual = true;
-      Serial.println("Los últimos 4 bits de dataToSend y ultimos4Bits son iguales.");
+      Serial.print("El número enviado por el arduino y regresado por la FPGA es: ");
+      Serial.println(dataToSend);
     } else {
-      Serial.println("Los últimos 4 bits de dataToSend y ultimos4Bits son diferentes. Reenviando el mensaje.");
+      Serial.print("Enviado: ");
+      Serial.print(dataToSend, BIN);
+      Serial.print(" Recibido: ");
+      Serial.println(ultimos4Bits, BIN);
     }
   }
   
   digitalWrite(CHIP, HIGH);  // Desactiva la señal CHIP para finalizar la comunicación
 
-  delay(5000);  
+  delay(5000);
 }
-

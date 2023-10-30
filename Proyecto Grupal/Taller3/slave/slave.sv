@@ -1,71 +1,38 @@
-module slave(
-    input wire clk,            // Señal de reloj
-    input wire rst_n,          // Señal de reinicio asincrónico activa baja
-    input wire ss,             // Señal de selección de esclavo
-    input wire mosi,           // Señal MOSI (Master Out Slave In)
-    output wire miso,          // Señal MISO (Master In Slave Out)
-    output wire [0:3] led      // LEDs de salida
+module slave (
+    input wire clk, mosi, ss, clock, // nombres de señales de entrada
+    output wire miso, // nombre de salida de datos
+    output reg led_select, // nombre de salida para seleccionar LEDs
+	 output logic [6:0] display1, 
+	 output logic out
 );
 
-    reg [3:0] data_in;          // Registro para almacenar datos recibidos
-    reg [0:3] shift_reg;              // Registro de desplazamiento para la comunicación SPI
-    reg [2:0] bit_count;        // Contador de bits
-    reg shift_done;             // Indicador de transferencia completa
-	 reg respuesta; 
-	 
-    reg [1:0] communication_state;  // Estado de comunicación
-    localparam IDLE = 2'b00;
-	 localparam SEND = 2'b01;
-    localparam RECEIVE = 2'b10;
-    localparam END = 2'b11;
+    reg [0:3] shift_register= 4'b0000;
+	 reg respuesta=1'b0;
 
-    // Lógica de la comunicación SPI
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            shift_reg = 4'b0000;
-            bit_count = 3'b000;
-            shift_done = 1'b1;
-            communication_state = IDLE;
-        end else begin
-            if (ss == 1'b0) begin
-                case (communication_state)
-                    IDLE: begin
-                        if (mosi == 0) communication_state = END;
-								if (mosi == 1 && shift_done == 1) communication_state = RECEIVE;								
-						  end
-						  
-						  RECEIVE: begin
-						  
-								$display("en recieve %d", mosi);
-                        shift_reg[bit_count] = mosi;
-								respuesta= mosi;
-                        bit_count = bit_count + 1'b1;
-                        if (bit_count == 3'b100) begin
-									$display("%b : %b", data_in, shift_reg);
-									 data_in = shift_reg;
-									 bit_count = 3'b000;
-                            communication_state = IDLE;
-                        end
-							end
-							
-							END: begin
-                        // Restablece el estado y espera la próxima comunicación
-                        shift_done = 1'b1;
-								shift_reg = 4'b0000;
-                        communication_state = IDLE;
-							end
-                
-					 endcase
-            end else begin
-					shift_reg = 4'b0000;
-					bit_count = 3'b000;
-					shift_done = 1'b1;
-					communication_state = IDLE;
-				end
-        end
+    always @(posedge clk) begin
+		shift_register = {shift_register[0:3],mosi}; // Actualización del registro de desplazamiento en el flanco de subida de clk
+		miso = mosi;
     end
-    // Asignación de LEDs
-    assign led = data_in;
-	 assign miso = respuesta;
-
+	 
+    assign led_select = ss; // Asignación directa de la salida led_select al valor de select
+	 
+	 Decodificador dec(
+			.A(shift_register[0]), 
+			.B(shift_register[1]), 
+			.C(shift_register[2]), 
+			.D(shift_register[3]), 
+			.a(display1[6]), 
+			.b(display1[5]), 
+			.c(display1[4]), 
+			.d(display1[3]), 
+			.e(display1[2]), 
+			.f(display1[1]), 
+			.g(display1[0])
+			);
+	 PWM_Controller pmw (
+			.out(out), 
+			.clock(clock), 
+			.data(shift_register)
+	 );
+	 
 endmodule
