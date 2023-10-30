@@ -1,19 +1,17 @@
 module PWM_Controller (
-  output logic [9:0] pwm_signal,  // Salida PWM de 10 bits
-  input logic clock,              // Señal de reloj
-  input logic reset              // Señal de reinicio opcional
+  output logic led, 
+  input logic clock, 
+  input wire switches [3:0]
 );
 
-  reg [9:0] counter;
+reg[7:0] counter = 0;
 
-  always_ff @(posedge clock or posedge reset) begin
-    if (reset)
-      counter <= 0;
-    else if (counter < 10'b1010)
-      counter <= counter + 1;
-  end
+always@(posedge clock) begin 
+	if (counter < 10) counter <= counter +1;
+	else counter <=0;
+end
 
-  assign pwm_signal = counter;
+assign led = (counter< (switches[0] + switches[1] *2 + switches[2] * 4 + switches[3] * 8) ) ? 1:0;
 
 endmodule
 
