@@ -6,6 +6,7 @@ const int CHIP = 10; // Pin de selección del esclavo en la FPGA
 #define START_COMMUNICATION 0x01
 #define END_COMMUNICATION   0x00
 
+int currentValue = 0;
 
 unsigned long startTime = 0;
 
@@ -26,10 +27,12 @@ void loop() {
   digitalWrite(CHIP, LOW);  
   
 
-  byte dataToSend = 0b10000; 
-  byte randomBits = random(16);
-  dataToSend |= (randomBits & 0x0F);
-  dataToSend <<= 1;
+  byte dataToSend = 0b0000;
+  currentValue++;
+  if (currentValue > 10) {
+    currentValue = 0; // Reinicia el valor si llega a 10
+  }
+  dataToSend |= (currentValue & 0x0F);
   Serial.println(dataToSend, BIN);
   
   byte dataReceived;
@@ -38,12 +41,12 @@ void loop() {
   
   startTime = millis(); // Registra el tiempo de inicio
   
-  while (!igual && (millis() - startTime < 3000)) { // Continuar mientras no se alcance el tiempo límite
-    dataReceived = SPI.transfer(dataToSend);  // Envía los datos y recibe la respuesta
+  while (!igual && (millis() - startTime < 100)) { // Continuar mientras no se alcance el tiempo límite
+    dataReceived = SPI.transfer(dataToSend & 0x0F);  // Envía los datos y recibe la respuesta
     ultimos4Bits = dataReceived & 0x0F;  // Aplica una máscara para obtener los últimos 4 bits
     Serial.println(ultimos4Bits, BIN);
   
-    if (randomBits == ultimos4Bits) {
+    if (currentValue == ultimos4Bits) {
       igual = true;
       Serial.println("Los últimos 4 bits de dataToSend y ultimos4Bits son iguales.");
     } else {
@@ -53,6 +56,5 @@ void loop() {
   
   digitalWrite(CHIP, HIGH);  // Desactiva la señal CHIP para finalizar la comunicación
 
-  delay(5000);  
+  delay(1000);
 }
-
